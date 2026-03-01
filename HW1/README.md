@@ -418,7 +418,7 @@ We have **4 groups of criteria**:
 3. Computational Cost (train_time_sec, inference_time_sec, latency, throughput, efficiency)
 4. Resource & Practical Constraints (model_size_kb, interpretability)
 
-To choose a modet that balances strong performance but also reasonable speed & size the optimal weights can be distributed like that: \
+To choose a model that balances strong performance but also reasonable speed & size the optimal weights can be distributed as such:
 - Performance: $40\%$
 - Stability: $15\%$
 - Computation: $25\%$
@@ -537,7 +537,7 @@ We will use first set of weights, because it is more balanced
 
 ---
 
-For the experiment let's try with second set of weights
+For the experiment let's try with second set of weights, that we described earlier
 
 #### Result ranking
 | model                        | distance_to_ideal |
@@ -590,7 +590,7 @@ So:
 | GaussianNB_smoothed          | 237.5       |
 | Ridge_alpha_small            | 237.0       |
 
-Here we see **DecisionTree** wins again \
+Here we see that **DecisionTree** wins again \
 Across metrics, it is consistently highly ranked. \
 Not necessarily always #1, but almost never low.
 
@@ -611,7 +611,8 @@ For each pair of models $A$ and $B$:
 Each voter “approves” a set of alternatives (all above a certain threshold). \
 Count approvals - highest wins.
 
-It is not strictly pairwise, more like scoring rules with threshold.
+It is not strictly pairwise, more like scoring rules with threshold. \
+Threshold is st to $0.7$ in this ranking.
 
 #### Result ranking
 | model                        | approval_score |
@@ -710,15 +711,15 @@ $M^∗ = argmax_i C_i$
 | Ridge_alpha_large        | -8             |
 | GaussianNB_smoothed      | -10            |
 
-`DecisionTree_default` - Copeland score 10
+`DecisionTree_default` - Copeland score 11
 
-This means it beats every other model pairwise across the majority of criteria. \
+This means that it beats every other model pairwise across the majority of criteria. \
 It’s essentially a **Condorcet winner** in the Pareto set. \
-This confirms what we have seen with WLC, distance-to-ideal, and Borda: it is consistently dominant, both in magnitude and in pairwise majority.
+This confirms what we have seen with WLC, distance-to-ideal, Borda and other rules: it is consistently **dominant**, both in magnitude and in pairwise majority.
 
 # Conclusion
 
-`DecisionTree_default` is a robust winner across all methods:
+`DecisionTree_default` is a **robust winner** across all methods:
 - Cardinal approaches: WLC, distance to ideal
 - Ordinal / social choice approaches: Borda, Approval, Hare/STV, Copeland
 - Pairwise: Tournament / Condorcet analysis

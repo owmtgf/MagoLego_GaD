@@ -380,3 +380,354 @@ This expectation is motivated by the following considerations:
 
 - **Balanced trade-off** \
     While some models may slightly outperform it in isolated metrics, the decision tree is expected to achieve the most favorable compromise across all evaluation dimensions.
+
+---
+
+# Normalization of the criteria
+All infinite values are replaced with max finite value in column; \
+*None* values are replaced with mean values (in `roc-auc` criteria) \
+`cv_std`, `train_time_sec`, `inference_time_sec`, `model_size_kb`, `latency` colums are transformed from minimization to maximization. \
+Min–Max normalization is used as a standard approach\
+$x_{ij}′ = \frac{max_j − min_j}{x_{ij} − min_j}$
+
+# Pareto set
+
+The Pareto set consists of all alternatives that are **not dominated** by any other alternative. 
+
+Alternative $a_i$ **dominates** alternative $a_k$ if: \
+$x_{ij} \ge x_{kj}$ for all $j$ \
+and \
+$x_{ij} \gt x_{kj}$ for at least one $j$
+
+Since the decision problem involves more than two criteria, a full visualization of the Pareto frontier is not possible. \
+Therefore, a two-dimensional projection onto the (F1, Efficiency) plane was constructed. \
+Pareto-efficient models are highlighted, illustrating the trade-off between predictive performance and computational efficiency.
+
+![Pareto dominance plot](pareto_graph.png)
+
+# Best alternative selection
+
+## Weighted linear combination of criteria
+
+To compute a weighted sum the weights need to be set to the criteria. \
+We have **4 groups of criteria**:
+1. Predictive Performance (accuracy, precision, recall, f1, roc_auc)
+2. Stability / Variance (cv_mean, cv_std, stability)
+3. Computational Cost (train_time_sec, inference_time_sec, latency, throughput, efficiency)
+4. Resource & Practical Constraints (model_size_kb, interpretability)
+
+To choose a modet that balances strong performance but also reasonable speed & size the optimal weights can be distributed like that: \
+- Performance: $40\%$
+- Stability: $15\%$
+- Computation: $25\%$
+- Practical: $20\%$
+
+Therefore for each criteria:
+
+**Performance** ($40\%$) since some metrics are correlated
+- accuracy: $0.03$ (can be misleading)
+- precision: $0.05$
+- recall: $0.07$
+- f1: $0.15$ (slightly higher, since it's balanced metric)
+- roc_auc: $0.1$ (threshold-independent robustness)
+
+**Stability** ($15\%$)
+- cv_mean: $0.02$
+- cv_std: $0.08$
+- stability: $0.05$
+
+**Computation** ($25\%$)
+- train_time_sec: $0.03$
+- inference_time_sec: $0.08$
+- latency: $0.06$
+- throughput: $0.05$
+- efficiency: $0.03$
+
+**Practical** ($20\%$)
+- model_size_kb: $0.12$
+- interpretability: $0.08$
+
+---
+
+For each Pareto model $M_i$: \
+$S_i = \sum_{j=1}^{15} w_j \cdot x_{ij}$ \
+Winner: \
+$M^∗ = argmax S_i$
+
+#### Result ranking
+| model                    | WLC_score |
+|--------------------------|-----------|
+| **DecisionTree_default** | 0.954354  |
+| DecisionTree_shallow     | 0.890697  |
+| GradientBoosting_fast    | 0.879892  |
+| DecisionTree_pruned      | 0.853819  |
+| LogReg_weak_reg          | 0.773293  |
+| KNN_3                    | 0.663800  |
+| LogReg_strong_reg        | 0.654004  |
+| KNN_15                   | 0.650671  |
+| Ridge_alpha_large        | 0.638895  |
+| Ridge_alpha_small        | 0.624398  |
+| LDA_svd                  | 0.603204  |
+| GaussianNB_smoothed      | 0.415588  |
+
+The ranking methods are really sensitive to weights that we set for the criteria. \
+Let's try to switch weights a little and see if the winner changes \
+Now add more weight to **computational efficiency** and less to accuracy, since almost all our models perform equally well
+
+Weights:
+- accuracy: $0.02$  
+- precision: $0.04$  
+- recall: $0.05$  
+- f1: $0.10$  
+- roc_auc: $0.09$  
+- cv_mean: $0.01$  
+- cv_std: $0.06$  
+- train_time_sec: $0.05$  
+- inference_time_sec: $0.15$  
+- model_size_kb: $0.10$  
+- latency: $0.10$  
+- throughput: $0.08$  
+- efficiency: $0.07$  
+- stability: $0.03$  
+- interpretability: $0.05$
+
+#### Result ranking
+| model                    | WLC_score |
+|--------------------------|-----------|
+| **DecisionTree_default** | 0.912646  |
+| DecisionTree_shallow     | 0.890850  |
+| DecisionTree_pruned      | 0.867078  |
+| GradientBoosting_fast    | 0.848144  |
+| LogReg_weak_reg          | 0.820631  |
+| LogReg_strong_reg        | 0.739092  |
+| Ridge_alpha_large        | 0.738974  |
+| Ridge_alpha_small        | 0.710843  |
+| LDA_svd                  | 0.691312  |
+| KNN_15                   | 0.635454  |
+| KNN_3                    | 0.599064  |
+| GaussianNB_smoothed      | 0.556900  |
+
+The winner and top-4 alternatives didn't change, so `DecisionTree_default` model is robust not only in performance, but also in computational efficiency
+
+## Weighted distance to the "ideal" point
+
+For model $i$: \
+$D_i = \sqrt{\sum_{j=1}^m w_j \cdot (1−x_{ij})^2}$ \
+Smaller $D_i$ is closer to ideal and better.
+
+We will use first set of weights, because it is more balanced
+
+#### Result ranking
+| model                    | distance_to_ideal |
+|--------------------------|-------------------|
+| **DecisionTree_default** | 0.158744          |
+| DecisionTree_shallow     | 0.221746          |
+| GradientBoosting_fast    | 0.291135          |
+| DecisionTree_pruned      | 0.307929          |
+| LogReg_weak_reg          | 0.321224          |
+| LogReg_strong_reg        | 0.482907          |
+| KNN_3                    | 0.498150          |
+| KNN_15                   | 0.506109          |
+| Ridge_alpha_large        | 0.509645          |
+| LDA_svd                  | 0.516907          |
+| Ridge_alpha_small        | 0.517988          |
+| GaussianNB_smoothed      | 0.744528          |
+
+---
+
+For the experiment let's try with second set of weights
+
+#### Result ranking
+| model                        | distance_to_ideal |
+|------------------------------|-------------------|
+| **DecisionTree_default**     | 0.222690          |
+| DecisionTree_shallow         | 0.229112          |
+| LogReg_weak_reg              | 0.277661          |
+| DecisionTree_pruned          | 0.292479          |
+| GradientBoosting_fast        | 0.335921          |
+| LogReg_strong_reg            | 0.409688          |
+| Ridge_alpha_large            | 0.427299          |
+| LDA_svd                      | 0.443737          |
+| Ridge_alpha_small            | 0.449575          |
+| KNN_15                       | 0.522341          |
+| KNN_3                        | 0.546013          |
+| GaussianNB_smoothed          | 0.637906          |
+
+The winner stays the same! \
+If it were hiding weaknesses, the distance-to-ideal method would punish it harder and push it down. \
+So that’s a strong robustness signal.
+
+## Social choice ranking
+
+### Scoring rules
+
+Each metric becomes a “voter”. \
+Each voter ranks the models. \
+Then we aggregate rankings using a scoring rule.
+
+#### Borda Count (Classic Scoring Rule)
+For $n$ models score per metric: \
+$Borda\ score = n − rank$ \
+So:
+- 1st place - $n−1$ points \
+- last place - $0$ points
+
+#### Result ranking
+| model                        | borda_score |
+|------------------------------|-------------|
+| **DecisionTree_shallow**     | 292.5       |
+| DecisionTree_default         | 290.5       |
+| DecisionTree_pruned          | 284.0       |
+| GradientBoosting_fast        | 278.5       |
+| LogReg_weak_reg              | 268.0       |
+| KNN_3                        | 268.0       |
+| LogReg_strong_reg            | 253.0       |
+| KNN_15                       | 250.5       |
+| Ridge_alpha_large            | 246.5       |
+| LDA_svd                      | 244.0       |
+| GaussianNB_smoothed          | 237.5       |
+| Ridge_alpha_small            | 237.0       |
+
+Here we see **DecisionTree** wins again \
+Across metrics, it is consistently highly ranked. \
+Not necessarily always #1, but almost never low.
+
+---
+
+### Rules based on majority relations
+
+For each pair of models $A$ and $B$:
+1. Count the number of criteria (voters) where $A > B$.
+2. Count the number of criteria where $B > A$.
+3. Compare:
+    - If $A > B$ in more criteria - $A$ beats $B$
+    - If $B > A$ in more criteria - $B$ beats $A$
+    - If tied - draw
+
+#### Approval Voting
+
+Each voter “approves” a set of alternatives (all above a certain threshold). \
+Count approvals - highest wins.
+
+It is not strictly pairwise, more like scoring rules with threshold.
+
+#### Result ranking
+| model                        | approval_score |
+|------------------------------|----------------|
+| **DecisionTree_default**     | 13             |
+| GradientBoosting_fast        | 12             |
+| DecisionTree_pruned          | 12             |
+| DecisionTree_shallow         | 12             |
+| KNN_15                       | 9              |
+| KNN_3                        | 8              |
+| LogReg_weak_reg              | 8              |
+| LogReg_strong_reg            | 8              |
+| Ridge_alpha_large            | 8              |
+| Ridge_alpha_small            | 7              |
+| GaussianNB_smoothed          | 7              |
+| LDA_svd                      | 6              |
+The winner stays consistent
+
+---
+
+#### Hare’s Procedure (Single Transferable Vote / STV)
+- Count first-choice votes.
+- Eliminate the alternative with fewest votes.
+- Transfer their votes according to next preference. Repeat until one winner.
+
+Here is Hare's procedure step by step:
+1. eliminating `KNN_3` with 1 votes
+2. eliminating `KNN_15` with 1 votes
+3. eliminating `GaussianNB_smoothed` with 1 votes
+4. eliminating `DecisionTree_shallow` with 1 votes
+5. eliminating `LogReg_weak_reg` with 2 votes
+6. eliminating `LogReg_strong_reg` with 2 votes
+7. eliminating `Ridge_alpha_large` with 2 votes
+8. eliminating `Ridge_alpha_small` with 2 votes
+9. eliminating `LDA_svd` with 2 votes
+10. eliminating `DecisionTree_pruned` with 4 votes
+11. eliminating `GradientBoosting_fast` with 3 votes
+
+**Hare/STV winner**: `DecisionTree_default`
+
+---
+
+### Rules based on the tournament matrix
+
+- Rows - model $A$
+- Columns - model $B$
+- Cell $T [ A, B ] = 1$ if $A$ beats $B$ pairwise, $0$ if tie, $-1$ if $A$ loses
+
+#### Tournament matrix
+| model | DecisionTree_default | GradientBoosting_fast | KNN_3 | KNN_15 | DecisionTree_shallow | DecisionTree_pruned | LogReg_weak_reg | LogReg_strong_reg | Ridge_alpha_small | LDA_svd | Ridge_alpha_large | GaussianNB_smoothed |
+|-------|-----------------------|------------------------|-------|--------|----------------------|---------------------|-----------------|-------------------|-------------------|---------|-------------------|---------------------|
+| **DecisionTree_default** | 0 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| **GradientBoosting_fast** | -1 | 0 | 1 | 1 | 0 | 1 | 1 | 1 | 1 | 1 | 0 | 1 |
+| **KNN_3** | -1 | -1 | 0 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| **KNN_15** | -1 | -1 | -1 | 0 | -1 | -1 | -1 | 1 | 1 | 1 | 1 | 1 |
+| **DecisionTree_shallow** | -1 | 0 | -1 | 1 | 0 | 1 | 1 | 1 | 1 | 1 | 1 | 1 |
+| **DecisionTree_pruned** | -1 | -1 | -1 | 1 | -1 | 0 | 1 | 1 | 1 | 1 | 1 | 1 |
+| **LogReg_weak_reg** | -1 | -1 | -1 | 1 | -1 | -1 | 0 | 1 | 1 | 1 | 1 | 1 |
+| **LogReg_strong_reg** | -1 | -1 | -1 | -1 | -1 | -1 | -1 | 0 | 1 | 1 | 1 | 1 |
+| **Ridge_alpha_small** | -1 | -1 | -1 | -1 | -1 | -1 | -1 | -1 | 0 | -1 | 1 | 1 |
+| **LDA_svd** | -1 | -1 | -1 | -1 | -1 | -1 | -1 | -1 | 1 | 0 | 1 | 0 |
+| **Ridge_alpha_large** | -1 | 0 | -1 | -1 | -1 | -1 | -1 | -1 | -1 | -1 | 0 | 1 |
+| **GaussianNB_smoothed** | -1 | -1 | -1 | -1 | -1 | -1 | -1 | -1 | -1 | 0 | -1 | 0 |
+
+By the tournament matrix we see that `DecisionTree_default` beats every other model pairwise. \
+So we have here the **Condorcet winner**, which is rare case in decision making
+
+---
+
+#### Copeland score
+$W_i = ∣\{l \ne i:t_{il} > t{li}\}∣$ \
+The number of pairwise victories of model $i$.
+
+$L_i = ∣\{l \ne i:t_{il} < t_{li}\}∣$ \
+The number of pairwise defeats of model $i$.
+
+Final Copeland score \
+$C_i = W_i − L_i$
+
+Winner: \
+$M^∗ = argmax_i C_i$
+
+#### Result ranking
+| model                    | copeland_score |
+|--------------------------|----------------|
+| **DecisionTree_default** | 11             |
+| GradientBoosting_fast    | 7              |
+| KNN_3                    | 7              |
+| DecisionTree_shallow     | 6              |
+| DecisionTree_pruned      | 3              |
+| LogReg_weak_reg          | 1              |
+| KNN_15                   | -1             |
+| LogReg_strong_reg        | -3             |
+| LDA_svd                  | -6             |
+| Ridge_alpha_small        | -7             |
+| Ridge_alpha_large        | -8             |
+| GaussianNB_smoothed      | -10            |
+
+`DecisionTree_default` - Copeland score 10
+
+This means it beats every other model pairwise across the majority of criteria. \
+It’s essentially a **Condorcet winner** in the Pareto set. \
+This confirms what we have seen with WLC, distance-to-ideal, and Borda: it is consistently dominant, both in magnitude and in pairwise majority.
+
+# Conclusion
+
+`DecisionTree_default` is a robust winner across all methods:
+- Cardinal approaches: WLC, distance to ideal
+- Ordinal / social choice approaches: Borda, Approval, Hare/STV, Copeland
+- Pairwise: Tournament / Condorcet analysis
+
+Top alternatives beyond the winner:
+`DecisionTree_shallow`, `DecisionTree_pruned`, and `LogReg_weak_reg` are consistently strong in mid-ranks. \
+`KNN` and `GaussianNB` variants are consistently weaker and eliminated first in social choice procedures.
+
+The expectation is fully validated:\
+We expected the **Decision Tree** to win, and indeed it dominates both in terms of **accuracy** and **computational efficiency**.
+
+Shifting weights toward computational efficiency or accuracy does not change the winner, highlighting robustness.
+
+`DecisionTree_default` is a safe choice for deployment.

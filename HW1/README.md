@@ -407,6 +407,8 @@ Pareto-efficient models are highlighted, illustrating the trade-off between pred
 
 # Best alternative selection
 
+> *You can find all criteria and rankings realizations in `./alternative_selection/main.ipynb` and `./alternative_selection/utils.py`.*
+
 ## Weighted linear combination of criteria
 
 To compute a weighted sum the weights need to be set to the criteria. \

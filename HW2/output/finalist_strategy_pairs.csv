@@ -1,0 +1,5 @@
+winner_strategy,runner_up_strategy,count
+Early,Early,16
+Early,Late,17
+Late,Early,50
+Late,Late,521

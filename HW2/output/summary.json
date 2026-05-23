@@ -1,0 +1,39 @@
+{
+  "dataset": {
+    "bid_rows": 10681,
+    "auctions": 628,
+    "unique_bidders": 3387,
+    "final_bidder_auction_observations": 5173,
+    "two_finalist_games": 604
+  },
+  "items": {
+    "Palm Pilot M515 PDA": 5917,
+    "Xbox game console": 2811,
+    "Cartier wristwatch": 1953
+  },
+  "auction_types": {
+    "7 day auction": 7041,
+    "3 day auction": 2023,
+    "5 day auction": 1617
+  },
+  "market_values_median_price": {
+    "Cartier wristwatch": 510.0,
+    "Palm Pilot M515 PDA": 231.5,
+    "Xbox game console": 123.15
+  },
+  "strategy_counts": {
+    "Early": 2380,
+    "Late": 2793
+  },
+  "strategy_shares": {
+    "Early": 0.4601,
+    "Late": 0.5399
+  },
+  "pure_nash_equilibria": [
+    [
+      "Late",
+      "Late"
+    ]
+  ],
+  "mixed_equilibrium_probability_late": null
+}

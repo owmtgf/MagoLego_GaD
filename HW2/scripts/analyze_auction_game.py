@@ -1,17 +1,7 @@
-"""Empirical game-theoretic analysis of eBay auction timing strategies.
-
-The script builds a two-player normal-form game from the top two bidders in
-each auction. Each bidder's strategy is classified by the timing of their final
-bid: Early (< 80% of auction duration) or Late (>= 80%, bid sniping).
-"""
-
-from __future__ import annotations
-
-import json
 import re
+import json
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 
 

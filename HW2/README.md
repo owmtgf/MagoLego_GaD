@@ -143,7 +143,7 @@ Strategies:
 The threshold of 0.8 is chosen because it roughly splits the distribution (54% Late) and reflects the practical notion of bid sniping — placing a serious bid in the final 20% of the auction when other bidders have less time to react. The median normalized final bid time across all bidder-auction observations is 0.844, close to the chosen threshold, confirming that 0.8 approximates the midpoint of the empirical distribution.
 
 ![Final Bid Time Distribution](output/images/final_time_histogram.png)
-*Figure 3. Histogram of normalized final bid times. The dashed line at 0.8 marks the threshold separating Early from Late bidding. The distribution shows that most serious bids are placed in the second half of the auction.*
+*Figure 1. Histogram of normalized final bid times. The dashed line at 0.8 marks the threshold separating Early from Late bidding. The distribution shows that most serious bids are placed in the second half of the auction.*
 
 Using all bidder-auction final bid observations:
 
@@ -153,7 +153,7 @@ Using all bidder-auction final bid observations:
 | Late | 2,793 | 53.99% |
 
 ![Strategy Distribution](output/images/strategy_distribution.png)
-*Figure 1. Distribution of Early vs Late bidding strategies across all finalists, winners, and runner-ups.*
+*Figure 2. Distribution of Early vs Late bidding strategies across all finalists, winners, and runner-ups.*
 
 Source: `output/summary.json`; row-level final-bid data are in `output/bidder_final_bids.csv`.
 
@@ -183,7 +183,7 @@ Observed finalist strategy pairs:
 | Late | Late | 521 |
 
 ![Finalist Strategy Pairs](output/images/strategy_pairs.png)
-*Figure 4. Observed counts of winner/runner-up strategy pairs. The (Late, Late) outcome dominates with 521 of 604 auctions, confirming the theoretical prediction.*
+*Figure 3. Observed counts of winner/runner-up strategy pairs. The (Late, Late) outcome dominates with 521 of 604 auctions, confirming the theoretical prediction.*
 
 Source: `output/finalist_strategy_pairs.csv`; auction-level observations are in `output/auction_finalist_games.csv`.
 
@@ -258,9 +258,6 @@ U(s_i, s_j)
     over all ordered finalist observations where
     player_strategy = s_i and opponent_strategy = s_j
 ```
-
-![Payoff Matrix Heatmap](output/images/payoff_heatmap.png)
-*Figure 2. Heatmap of the empirical payoff matrix. Late is the dominant strategy: it yields higher payoffs than Early regardless of the opponent's choice.*
 
 Interpretation:
 
@@ -384,7 +381,6 @@ Generated outputs:
 | `output/payoff_observations.csv` | Ordered payoff observations used to estimate the matrix |
 | `output/dataset_descriptive_statistics.csv` | Descriptive statistics for the raw dataset |
 | `output/images/strategy_distribution.png` | Fig 1: Early vs Late strategy counts |
-| `output/images/payoff_heatmap.png` | Fig 2: Payoff matrix heatmap |
 | `output/images/final_time_histogram.png` | Fig 3: Distribution of bid timing |
 | `output/images/strategy_pairs.png` | Fig 4: Strategy pair counts |
 

@@ -179,7 +179,7 @@ def mixed_equilibrium_probability_late(matrix: pd.DataFrame) -> float | None:
 
 
 def plot_strategy_distribution(final: pd.DataFrame, games: pd.DataFrame) -> None:
-    """1. Bar chart: Early vs Late shares across all finalists, winners, runner-ups."""
+    """2. Bar chart: Early vs Late shares across all finalists, winners, runner-ups."""
     fig, ax = plt.subplots(figsize=(9, 5))
 
     categories = ["All finalists", "Winners", "Runner-ups"]
@@ -216,35 +216,8 @@ def plot_strategy_distribution(final: pd.DataFrame, games: pd.DataFrame) -> None
     fig.savefig(IMAGES_DIR / "strategy_distribution.png", dpi=150)
     plt.close(fig)
 
-
-def plot_payoff_heatmap(matrix: pd.DataFrame) -> None:
-    """2. Heatmap of the 2x2 payoff matrix."""
-    fig, ax = plt.subplots(figsize=(7, 5))
-
-    data = matrix.values
-    im = ax.imshow(data, cmap="YlOrRd", aspect="auto")
-
-    ax.set_xticks([0, 1])
-    ax.set_yticks([0, 1])
-    ax.set_xticklabels(["Early", "Late"])
-    ax.set_yticklabels(["Early", "Late"])
-    ax.set_xlabel("Opponent strategy")
-    ax.set_ylabel("Player strategy")
-    ax.set_title("Payoff Matrix Heatmap\nU(player strategy, opponent strategy)")
-
-    for i in range(2):
-        for j in range(2):
-            ax.text(j, i, f"{data[i, j]:.2f}",
-                    ha="center", va="center", color="black", fontsize=14, fontweight="bold")
-
-    fig.colorbar(im, ax=ax, label="Expected payoff")
-    fig.tight_layout()
-    fig.savefig(IMAGES_DIR / "payoff_heatmap.png", dpi=150)
-    plt.close(fig)
-
-
 def plot_final_time_histogram(final: pd.DataFrame) -> None:
-    """3. Histogram of normalized final bid times with 0.8 threshold line."""
+    """1. Histogram of normalized final bid times with 0.8 threshold line."""
     fig, ax = plt.subplots(figsize=(9, 5))
 
     ax.hist(final["normalized_final_time"], bins=50, color="#4C72B0", edgecolor="white", alpha=0.85)
@@ -267,7 +240,7 @@ def plot_final_time_histogram(final: pd.DataFrame) -> None:
 
 
 def plot_strategy_pairs(finalist_pairs: pd.DataFrame) -> None:
-    """4. Bar chart of observed winner/runner-up strategy pair counts."""
+    """3. Bar chart of observed winner/runner-up strategy pair counts."""
     fig, ax = plt.subplots(figsize=(8, 5))
 
     pair_labels = [
@@ -347,7 +320,6 @@ def main() -> None:
         json.dump(summary, handle, indent=2)
 
     plot_strategy_distribution(final, games)
-    plot_payoff_heatmap(matrix)
     plot_final_time_histogram(final)
     plot_strategy_pairs(finalist_pairs)
     print("Visualizations saved to output/images/")

@@ -4,10 +4,13 @@ from pathlib import Path
 
 import pandas as pd
 
+import matplotlib.pyplot as plt
+import numpy as np
 
 ROOT = Path(__file__).resolve().parents[1]
 DATA_PATH = ROOT / "data" / "auction.csv"
 OUTPUT_DIR = ROOT / "output"
+IMAGES_DIR = OUTPUT_DIR / "images"
 LATE_THRESHOLD = 0.80
 STRATEGIES = ["Early", "Late"]
 
@@ -175,8 +178,106 @@ def mixed_equilibrium_probability_late(matrix: pd.DataFrame) -> float | None:
     return None
 
 
+def plot_strategy_distribution(final: pd.DataFrame, games: pd.DataFrame) -> None:
+    """2. Bar chart: Early vs Late shares across all finalists, winners, runner-ups."""
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    categories = ["All finalists", "Winners", "Runner-ups"]
+    early_counts = [
+        int((final["strategy"] == "Early").sum()),
+        int((games["winner_strategy"] == "Early").sum()),
+        int((games["runner_up_strategy"] == "Early").sum()),
+    ]
+    late_counts = [
+        int((final["strategy"] == "Late").sum()),
+        int((games["winner_strategy"] == "Late").sum()),
+        int((games["runner_up_strategy"] == "Late").sum()),
+    ]
+
+    x = np.arange(len(categories))
+    width = 0.35
+
+    bars_early = ax.bar(x - width / 2, early_counts, width, label="Early", color="#4C72B0")
+    bars_late = ax.bar(x + width / 2, late_counts, width, label="Late", color="#DD8452")
+
+    for bar in bars_early + bars_late:
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 15,
+                f"{bar.get_height():.0f}", ha="center", va="bottom", fontsize=9)
+
+    ax.set_xlabel("Category")
+    ax.set_ylabel("Count")
+    ax.set_title("Distribution of Early vs Late Bidding Strategies")
+    ax.set_xticks(x)
+    ax.set_xticklabels(categories)
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(IMAGES_DIR / "strategy_distribution.png", dpi=150)
+    plt.close(fig)
+
+def plot_final_time_histogram(final: pd.DataFrame) -> None:
+    """1. Histogram of normalized final bid times with 0.8 threshold line."""
+    fig, ax = plt.subplots(figsize=(9, 5))
+
+    ax.hist(final["normalized_final_time"], bins=50, color="#4C72B0", edgecolor="white", alpha=0.85)
+    ax.axvline(LATE_THRESHOLD, color="#DD8452", linestyle="--", linewidth=2,
+               label=f"Late/Early threshold = {LATE_THRESHOLD}")
+
+    ax.set_xlabel("Normalized final bid time (bid time / auction duration)")
+    ax.set_ylabel("Number of bidder-auction observations")
+    ax.set_title("Distribution of Final Bid Timing Across All Observations")
+    ax.legend()
+    ax.grid(axis="y", alpha=0.3)
+
+    early_share = (final["normalized_final_time"] < LATE_THRESHOLD).mean()
+    ax.text(0.02, ax.get_ylim()[1] * 0.95,
+            f"Early share: {early_share:.1%}", fontsize=10)
+
+    fig.tight_layout()
+    fig.savefig(IMAGES_DIR / "final_time_histogram.png", dpi=150)
+    plt.close(fig)
+
+
+def plot_strategy_pairs(finalist_pairs: pd.DataFrame) -> None:
+    """3. Bar chart of observed winner/runner-up strategy pair counts."""
+    fig, ax = plt.subplots(figsize=(8, 5))
+
+    pair_labels = [
+        "(Early, Early)", "(Early, Late)",
+        "(Late, Early)",  "(Late, Late)",
+    ]
+    pair_keys = [
+        ("Early", "Early"), ("Early", "Late"),
+        ("Late", "Early"),  ("Late", "Late"),
+    ]
+
+    count_map = {
+        (row["winner_strategy"], row["runner_up_strategy"]): int(row["count"])
+        for _, row in finalist_pairs.iterrows()
+    }
+    counts = [count_map.get(key, 0) for key in pair_keys]
+
+    colors = ["#4C72B0", "#55A868", "#8172B3", "#CCB974"]
+    bars = ax.bar(pair_labels, counts, color=colors, edgecolor="white")
+
+    for bar in bars:
+        ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 5,
+                f"{bar.get_height():.0f}", ha="center", va="bottom", fontsize=10)
+
+    ax.set_xlabel("Strategy pair (Winner, Runner-up)")
+    ax.set_ylabel("Number of auctions")
+    ax.set_title("Observed Finalist Strategy Pairs")
+    ax.grid(axis="y", alpha=0.3)
+
+    fig.tight_layout()
+    fig.savefig(IMAGES_DIR / "strategy_pairs.png", dpi=150)
+    plt.close(fig)
+
+
 def main() -> None:
     OUTPUT_DIR.mkdir(exist_ok=True)
+    IMAGES_DIR.mkdir(exist_ok=True)
 
     df = load_data()
     final = bidder_final_bids(df)
@@ -217,6 +318,11 @@ def main() -> None:
 
     with (OUTPUT_DIR / "summary.json").open("w", encoding="utf-8") as handle:
         json.dump(summary, handle, indent=2)
+
+    plot_strategy_distribution(final, games)
+    plot_final_time_histogram(final)
+    plot_strategy_pairs(finalist_pairs)
+    print("Visualizations saved to output/images/")
 
     print("Auction game analysis complete.")
     print(f"Rows: {summary['dataset']['bid_rows']}")
